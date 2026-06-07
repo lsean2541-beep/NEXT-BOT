@@ -87,4 +87,5 @@ def handle_qr_scanner(message):
 if __name__ == "__main__":
     print("Bot is starting via Long Polling...")
     bot.remove_webhook()
-    bot.infinity_polling(non_stop=True)
+    # Remove 'non_stop=True' here as it is handled automatically by the library
+    bot.infinity_polling()
