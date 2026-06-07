@@ -2,8 +2,9 @@ import os
 import io
 import telebot
 import qrcode
+import cv2
+import numpy as np
 from PIL import Image
-from pyzbar.pyzbar import decode
 
 # Initialize Bot with Token from Environment Variable
 TOKEN = os.environ.get('BOT_TOKEN')
@@ -62,19 +63,18 @@ def handle_qr_scanner(message):
         file_info = bot.get_file(message.photo[-1].file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         
-        # Open image with Pillow
-        image = Image.open(io.BytesIO(downloaded_file))
+        # Convert downloaded bytes straight into an OpenCV image matrix
+        nparr = np.frombuffer(downloaded_file, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # Decode QR Code
-        decoded_objects = decode(image)
+        # Initialize OpenCV QR Code Detector
+        detector = cv2.QRCodeDetector()
+        qr_data, bbox, straight_qrcode = detector.detectAndDecode(img)
         
-        if not decoded_objects:
+        if not qr_data:
             bot.edit_message_text("❌ ไม่พบ QR Code ในรูปภาพนี้ กรุณาส่งรูปที่ชัดเจนกว่านี้ครับ", message.chat.id, status_msg.message_id)
             return
             
-        # Extract data
-        qr_data = decoded_objects[0].data.decode('utf-8')
-        
         result_text = f"🔍 **ผลการสแกน QR Code:**\n\n`{qr_data}`"
         bot.delete_message(message.chat.id, status_msg.message_id)
         bot.reply_to(message, result_text, parse_mode='Markdown')
@@ -86,7 +86,5 @@ def handle_qr_scanner(message):
 
 if __name__ == "__main__":
     print("Bot is starting via Long Polling...")
-    # Remove any existing webhooks so polling works cleanly
     bot.remove_webhook()
-    # non_stop=True keeps the bot running even if it hits a minor network error
     bot.infinity_polling(non_stop=True)
