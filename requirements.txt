@@ -1,4 +1,4 @@
 pyTelegramBotAPI
 qrcode
 Pillow
-pyzbar
+opencv-python-headless
